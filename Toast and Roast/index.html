@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roast &amp; Toast Machine</title>
+<style>
+  :root { --bg:#1a0f2e; --panel:#2a1a47; --pink:#ff3d81; --yellow:#ffd23f; --cream:#fff4dc; --muted:#b8a9d9; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--cream); font-family: "Trebuchet MS", "Segoe UI", sans-serif; line-height:1.5; }
+  .wrap { max-width: 1050px; margin:0 auto; padding:16px; }
+  header { text-align:center; padding:14px 8px 20px; }
+  .marquee { display:inline-block; padding:10px 28px; border:4px solid var(--yellow); border-radius:14px;
+    box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px var(--pink), 0 0 24px var(--pink); }
+  h1 { margin:0; font-size: clamp(26px, 6vw, 48px); color:var(--yellow); text-shadow: 3px 3px 0 var(--pink); letter-spacing:1px; }
+  header p { margin:12px 0 0; color:var(--muted); }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap:18px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  section { background:var(--panel); border-radius:14px; padding:16px; border:2px solid #44306e; }
+  .full { grid-column: 1 / -1; }
+  h2 { margin:0 0 10px; font-size:17px; color:var(--yellow); text-transform:uppercase; letter-spacing:1.5px; }
+  label { font-size:13px; font-weight:bold; color:var(--muted); }
+  textarea, input[type=text], input[type=password], select { width:100%; font:15px "Trebuchet MS", sans-serif; padding:9px; border-radius:8px;
+    border:2px solid #44306e; background:#150b27; color:var(--cream); }
+  textarea { resize:vertical; }
+  button { font:bold 14px "Trebuchet MS", sans-serif; padding:9px 15px; border:none; border-radius:999px; cursor:pointer; margin:8px 8px 0 0;
+    background:var(--yellow); color:#1a0f2e; }
+  button.hot { background:var(--pink); color:#fff; }
+  button.alt { background:transparent; color:var(--cream); border:2px solid var(--muted); }
+  button:disabled { opacity:.5; cursor:wait; }
+  .meta { font-size:13px; color:var(--muted); margin-top:4px; }
+  .err { color:#ff8fa8; font-weight:bold; }
+  .tag { display:inline-block; font-weight:bold; padding:2px 10px; border-radius:999px; margin-bottom:6px; }
+  .tag.roast { background:var(--pink); color:#fff; } .tag.toast { background:var(--yellow); color:#1a0f2e; }
+  img.preview { max-width:100%; margin-top:8px; border-radius:10px; border:2px solid #44306e; }
+  .item { border-top:1px dashed #44306e; padding:10px 0; }
+  .item pre { white-space:pre-wrap; font-family:inherit; margin:4px 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="marquee"><h1>🎤 Roast &amp; Toast Machine</h1></div>
+    <p>One subject. Two posts. Pick a persona and let it rip (lovingly).</p>
+  </header>
+
+  <div class="grid">
+    <section>
+      <h2>1. Comedy Guide (your lens)</h2>
+      <textarea id="guide" rows="24"></textarea>
+      <div>
+        <button id="saveGuide" class="hot">Save guide</button>
+        <button id="uploadGuideBtn" class="alt">Upload .txt/.md</button>
+        <button id="resetGuide" class="alt">Reset to default</button>
+        <input type="file" id="guideFile" accept=".txt,.md,text/plain" hidden>
+      </div>
+      <div class="meta" id="guideMsg"></div>
+      <div class="meta">Tip: any line starting with <b>PERSONA:</b> shows up in the persona menu.</div>
+    </section>
+
+    <section>
+      <h2>2. Pick a subject</h2>
+      <label for="code">Access code (kept in memory only)</label>
+      <input type="password" id="code" autocomplete="off" placeholder="Ask the tool owner for the code">
+      <label for="persona" style="display:block;margin-top:10px">Comedy persona</label>
+      <select id="persona"></select>
+      <label for="topic" style="display:block;margin-top:10px">Who or what are we roasting &amp; toasting?</label>
+      <textarea id="topic" rows="4" placeholder="e.g. My roommate who owns 14 kinds of hot sauce. Or a trending news story."></textarea>
+      <button id="gen" class="hot">Roast &amp; Toast it!</button>
+      <div class="meta err" id="genErr"></div>
+
+      <div style="margin-top:14px">
+        <label for="img">Add a picture (optional)</label>
+        <input type="file" id="img" accept="image/*">
+        <img id="preview" class="preview" alt="" hidden>
+      </div>
+    </section>
+
+    <section>
+      <span class="tag roast">🔥 THE ROAST</span>
+      <textarea id="roast" rows="10" placeholder="Your roast appears here. Edit freely."></textarea>
+      <div class="meta" id="roastCount">0 words, 0 characters</div>
+      <button id="copyRoast">Copy roast</button>
+    </section>
+
+    <section>
+      <span class="tag toast">🥂 THE TOAST</span>
+      <textarea id="toast" rows="10" placeholder="Your toast appears here. Edit freely."></textarea>
+      <div class="meta" id="toastCount">0 words, 0 characters</div>
+      <button id="copyToast">Copy toast</button>
+    </section>
+
+    <section class="full">
+      <button id="archive" class="hot" style="margin-top:0">Save both to archive</button>
+      <div class="meta" id="postMsg"></div>
+    </section>
+
+    <section class="full">
+      <h2>Archive (this device only)</h2>
+      <div class="meta">Stored in this browser. Clearing browser data erases it, and it does not sync to other devices.</div>
+      <button id="clearArchive" class="alt">Clear archive</button>
+      <div id="archiveList"></div>
+    </section>
+  </div>
+</div>
+
+<script>
+const DEFAULT_GUIDE = `COMEDY BRAND: Roast & Toast Machine (personal brand of [Your Name])
+
+PERSONALITY: Quick-witted, affectionate, never mean. The funny friend everyone wants at the party.
+
+TONE: Playful and punchy. Headlines/openers are short, specific, and a little absurd. Roasts tease choices and quirks, never people's bodies, identity, or struggles. Toasts are sincere, warm, and specific. Max one emoji per post.
+
+PERSONA: Sports Announcer (breathless play-by-play, dramatic stats, "and the crowd goes wild")
+PERSONA: Shakespearean Narrator (old-timey flourish, "thou", grand over-the-top drama about small things)
+PERSONA: Disappointed Nature Documentary Host (hushed British wonder, treats the subject as a rare species)
+
+TARGET AUDIENCE: Friends, classmates, and followers aged 18-35 who like light, shareable humor.
+
+KEY CHANNEL: X (also works on LinkedIn and Facebook)
+
+POST LENGTH: Roast 40-80 words. Toast 40-80 words. Each is one short paragraph, 2 hashtags max.
+
+CALL TO ACTION: Roast ends with "Tag someone who deserves this." Toast ends with "Send this to someone who made your week."
+
+GOALS: Grow followers with shareable, good-natured humor; become known as the account that makes people laugh and feel good.
+
+COLOR SCHEME: Deep purple #1A0F2E, hot pink #FF3D81, spotlight yellow #FFD23F, cream #FFF4DC.
+
+IMAGE MOOD: Comedy-club stage, single spotlight, neon marquee lights, confetti, playful and high energy.`;
+
+const K = { guide:"rt_guide", archive:"rt_archive" };
+const $ = id => document.getElementById(id);
+const load = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } };
+const save = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+
+// NOTE: only the comedy guide and archive go in localStorage. No API keys, ever.
+$("guide").value = load(K.guide, null) || DEFAULT_GUIDE;
+
+function refreshPersonas() {
+  const names = [...$("guide").value.matchAll(/^PERSONA:\s*(.+?)\s*(?:\(|$)/gm)].map(m => m[1].trim());
+  const prev = $("persona").value;
+  $("persona").innerHTML = '<option value="">(Use guide default voice)</option>' +
+    names.map(n => `<option>${esc(n)}</option>`).join("");
+  if (names.includes(prev)) $("persona").value = prev;
+}
+$("guide").oninput = refreshPersonas;
+
+function archive() { return load(K.archive, []); }
+function addArchive(entry) { const a = archive(); a.unshift(entry); save(K.archive, a); renderArchive(); }
+
+$("saveGuide").onclick = () => {
+  save(K.guide, $("guide").value);
+  addArchive({ type:"guide", date:new Date().toISOString(), text:$("guide").value });
+  $("guideMsg").textContent = "Saved " + new Date().toLocaleTimeString() + " (version archived).";
+};
+$("resetGuide").onclick = () => { if (confirm("Replace the guide with the default?")) { $("guide").value = DEFAULT_GUIDE; refreshPersonas(); } };
+$("uploadGuideBtn").onclick = () => $("guideFile").click();
+$("guideFile").onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $("guide").value = await f.text(); refreshPersonas();
+  $("guideMsg").textContent = "Loaded " + f.name + ". Click Save guide to keep it.";
+};
+
+function count(id, out) {
+  const t = $(id).value.trim();
+  $(out).textContent = (t ? t.split(/\s+/).length : 0) + " words, " + $(id).value.length + " characters";
+}
+$("roast").oninput = () => count("roast", "roastCount");
+$("toast").oninput = () => count("toast", "toastCount");
+
+$("gen").onclick = async () => {
+  $("genErr").textContent = "";
+  const topic = $("topic").value.trim();
+  if (!topic) { $("genErr").textContent = "Give me a subject first."; return; }
+  $("gen").disabled = true; $("gen").textContent = "Warming up the mic...";
+  try {
+    const r = await fetch("/api/generate", {
+      method:"POST",
+      headers:{ "content-type":"application/json", "x-access-code": $("code").value },
+      body: JSON.stringify({ topic, brandGuide: $("guide").value, persona: $("persona").value })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Request failed");
+    $("roast").value = j.roast; $("toast").value = j.toast;
+    count("roast", "roastCount"); count("toast", "toastCount");
+  } catch (e) { $("genErr").textContent = e.message; }
+  $("gen").disabled = false; $("gen").textContent = "Roast & Toast it!";
+};
+
+$("img").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { $("preview").src = rd.result; $("preview").hidden = false; };
+  rd.readAsDataURL(f);
+};
+
+async function copy(id) {
+  await navigator.clipboard.writeText($(id).value);
+  $("postMsg").textContent = "Copied! Paste it into your social channel and attach your picture there.";
+}
+$("copyRoast").onclick = () => copy("roast");
+$("copyToast").onclick = () => copy("toast");
+
+$("archive").onclick = () => {
+  if (!$("roast").value.trim() && !$("toast").value.trim()) return;
+  addArchive({ type:"draft", date:new Date().toISOString(), topic:$("topic").value, persona:$("persona").value,
+    roast:$("roast").value, toast:$("toast").value });
+  $("postMsg").textContent = "Saved to archive.";
+};
+$("clearArchive").onclick = () => { if (confirm("Delete all archived items?")) { save(K.archive, []); renderArchive(); } };
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])); }
+function renderArchive() {
+  const a = archive();
+  $("archiveList").innerHTML = a.length ? a.map(x => x.type === "guide" ? `
+    <div class="item"><strong>Comedy guide saved</strong><span class="meta"> &middot; ${new Date(x.date).toLocaleString()}</span>
+    <pre>${esc(x.text)}</pre></div>` : `
+    <div class="item"><strong>Draft</strong><span class="meta"> &middot; ${new Date(x.date).toLocaleString()}</span>
+    <div class="meta">Topic: ${esc(x.topic)}${x.persona ? " &middot; Persona: " + esc(x.persona) : ""}</div>
+    <pre><b>ROAST:</b> ${esc(x.roast)}</pre><pre><b>TOAST:</b> ${esc(x.toast)}</pre></div>`).join("")
+    : '<div class="meta">Nothing archived yet.</div>';
+}
+refreshPersonas(); renderArchive(); count("roast", "roastCount"); count("toast", "toastCount");
+</script>
+</body>
+</html>
